@@ -79,14 +79,17 @@ private:
 	std::vector<std::string> mf_GetAllNonterminalsFromString(const std::string& string) const;
 	int mf_GetRandom(const size_t& leftBound, const size_t& rightBound) const;
 	std::string mf_ReturnNonTerminalThatGoesOnlyInTerminal(const std::vector<Production>& productions, char character) const;
+	std::unordered_set<std::string> mf_ConvertProductionsLeftPartToUSet(const std::vector<Production>& productions) const;
+	std::string mf_GetTheNextSymbolToBeAddedInProductions(const std::vector<Production>& productions) const;
 
 private:
 	void mf_RemoveUnusableNonterminals();
 	void mf_RemoveUnaccesibleNonterminals();
 	void mf_RemoveRenames();
 
-public:
+private:
 	void mf_ChomskyPartTwo();
+	void mf_ChomskyPartThree();
 
 private:
 	std::vector<char> m_nonterminalSymbols;

@@ -8,7 +8,8 @@ int main()
 	std::ifstream in("grammar_input.txt");
 	g.ReadFile(in);
 	g.SimplifyGrammar();
-	g.mf_ChomskyPartTwo();
+	g.MakeItChomsky();
+	//g.MakeItGraibach();
 	std::cout << g;
 
 	return 0;

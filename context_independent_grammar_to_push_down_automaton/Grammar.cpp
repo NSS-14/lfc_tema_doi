@@ -528,6 +528,7 @@ void Grammar::SimplifyGrammar()
 void Grammar::MakeItChomsky()
 {
 	mf_ChomskyPartTwo();
+	mf_ChomskyPartThree();
 }
 
 void Grammar::mf_RemoveUnusableNonterminals()
@@ -656,19 +657,19 @@ void Grammar::mf_RemoveRenames()
 void Grammar::mf_ChomskyPartTwo()
 {
 	std::vector<Production> newProductions;
-	std::unordered_set<size_t> productionsIndexesThatHaveMoreThanTwoInRightPart;
+	std::unordered_set<size_t> productionsIndexesThatHaveMoreThanOneInRightPart;
 
 	auto vn = mf_ConvertVectorOfCharsToUset(m_nonterminalSymbols);
 	auto vt = mf_ConvertVectorOfCharsToUset(m_terminalSymbols);
 
 	for (size_t i = 0; i < m_productions.size(); ++i) {
 		if (m_productions[i].second.size() > 1) {
-			productionsIndexesThatHaveMoreThanTwoInRightPart.insert(i);
+			productionsIndexesThatHaveMoreThanOneInRightPart.insert(i);
 			continue;
 		}
 		newProductions.push_back(m_productions[i]);
 	}
-	for (size_t index : productionsIndexesThatHaveMoreThanTwoInRightPart) {
+	for (size_t index : productionsIndexesThatHaveMoreThanOneInRightPart) {
 		for (size_t i = 0; i < m_productions[index].second.size(); ++i) {
 			auto& currentCharacter = m_productions[index].second[i];
 			if (vt.count(currentCharacter)) {
@@ -678,23 +679,46 @@ void Grammar::mf_ChomskyPartTwo()
 					currentCharacter = nonterminalThatAlreadyExists[0];
 					continue;
 				}
-				if (nts[nts.size() - 1] == 'S') {
-					nts.push_back('A');
-				}
-				else {
-					if (nts[nts.size() - 1] + 1 == 'S') {
-						nts.push_back('S' + 1);
-					}
-					else {
-						nts.push_back(nts[nts.size() - 1] + 1);
-
-					}
-				}
-				newProductions.emplace_back(mf_ConvertCharToSizeOneString(nts[nts.size() - 1]), mf_ConvertCharToSizeOneString(currentCharacter));
-				currentCharacter = nts[nts.size() - 1]; 
+				std::string nextNonterminal = mf_GetTheNextSymbolToBeAddedInProductions(newProductions);
+				nts.push_back(nextNonterminal[0]);
+				newProductions.emplace_back(nextNonterminal, mf_ConvertCharToSizeOneString(currentCharacter));
+				currentCharacter = nextNonterminal[0];
 			}
 		}
 		newProductions.push_back(m_productions[index]);
+	}
+	m_productions = newProductions;
+}
+
+void Grammar::mf_ChomskyPartThree()
+{
+	std::vector<Production>newProductions;
+	std::vector<size_t>productionsThatHaveMoreThanTwoInRightIndexes;
+	for (size_t i = 0; i < m_productions.size(); ++i) {
+		if (m_productions[i].second.size() > 2) {
+			productionsThatHaveMoreThanTwoInRightIndexes.push_back(i);
+			continue;
+		}
+		newProductions.push_back(m_productions[i]);
+	}
+	for (size_t index : productionsThatHaveMoreThanTwoInRightIndexes) {
+		std::string currentRightPartOfProduction = m_productions[index].second;
+		std::string lastCreatedNonTerminal = mf_GetTheNextSymbolToBeAddedInProductions(newProductions);
+		m_nonterminalSymbols.push_back(lastCreatedNonTerminal[0]);
+		m_productions[index].second.resize(2);
+		m_productions[index].second[1] = lastCreatedNonTerminal[0];
+		newProductions.push_back(m_productions[index]);
+		for (size_t i = 1; i < currentRightPartOfProduction.size() - 2; ++i) {
+			std::string newNonTerminal = mf_GetTheNextSymbolToBeAddedInProductions(newProductions);
+			m_nonterminalSymbols.push_back(newNonTerminal[0]);
+			newNonTerminal.push_back(currentRightPartOfProduction[i]);
+			std::swap(newNonTerminal[0], newNonTerminal[1]);
+			newProductions.emplace_back(lastCreatedNonTerminal, newNonTerminal);
+			std::swap(newNonTerminal[0], newNonTerminal[1]);
+			newNonTerminal.resize(1);
+			lastCreatedNonTerminal = newNonTerminal;
+		}
+		newProductions.emplace_back(lastCreatedNonTerminal, currentRightPartOfProduction.substr(currentRightPartOfProduction.size() - 2));
 	}
 	m_productions = newProductions;
 }
@@ -749,10 +773,52 @@ std::string Grammar::mf_ReturnNonTerminalThatGoesOnlyInTerminal(const std::vecto
 			}
 		}
 	}
+	for (const auto& production : m_productions) {
+		if (nonTerminalApparitions.count(production.first)) {
+			++nonTerminalApparitions[production.first];
+		}
+		else {
+			nonTerminalApparitions[production.first] = 1;
+		}
+		if (production.second.size() == 1) {
+			if (production.second[0] == character) {
+				allProductionsThatGoesIntoCharacter.push_back(production);
+			}
+		}
+	}
 	for (const auto& production : allProductionsThatGoesIntoCharacter) {
 		if (nonTerminalApparitions[production.first] == 1) {
 			return production.first;
 		}
 	}
 	return {};
+}
+
+std::unordered_set<std::string> Grammar::mf_ConvertProductionsLeftPartToUSet(const std::vector<Production>& productions) const
+{
+	std::unordered_set<std::string> result;
+	for (const auto& production : productions) {
+		result.insert(production.first);
+	}
+	return result;
+}
+
+std::string Grammar::mf_GetTheNextSymbolToBeAddedInProductions(const std::vector<Production>& productions) const
+{
+	auto leftPartOfProductions = mf_ConvertProductionsLeftPartToUSet(productions);
+	for (const auto& production : m_productions) {
+		leftPartOfProductions.insert(production.first);
+	}
+	for (char character = 'A'; character <= 'Z'; ++character) {
+		if (leftPartOfProductions.count(mf_ConvertCharToSizeOneString(character))) {
+			continue;
+		}
+		return mf_ConvertCharToSizeOneString(character);
+	}
+	for (char character = 123; character <= 255; ++character) {
+		if (leftPartOfProductions.count(mf_ConvertCharToSizeOneString(character))) {
+			continue;
+		}
+		return mf_ConvertCharToSizeOneString(character);
+	}
 }

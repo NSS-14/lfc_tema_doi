@@ -1,1 +1,2 @@
 C:\custom_folders\learning\faculty\year_ii\semester_i\flc\homeworks\category_2\context_independent_grammar_to_push_down_automaton\x64\Debug\context_independent_grammar_to_push_down_automaton.exe
+C:\custom_folders\learning\faculty\year_ii\semester_i\flc\repo\context_independent_grammar_to_push_down_automaton\x64\Debug\context_independent_grammar_to_push_down_automaton.exe
