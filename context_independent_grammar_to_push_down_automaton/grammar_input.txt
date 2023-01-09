@@ -1,0 +1,13 @@
+3
+S A B 
+2
+a b 
+S
+7
+S AB
+S a
+S Aa
+A Aa
+A a
+B SBa
+B b

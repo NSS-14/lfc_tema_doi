@@ -1,0 +1,9 @@
+﻿  Grammar.cpp
+C:\custom_folders\learning\faculty\year_ii\semester_i\flc\homeworks\category_2\context_independent_grammar_to_push_down_automaton\Grammar.cpp(730,61): warning C4267: 'argument': conversion from 'size_t' to '_Ty', possible loss of data
+          with
+          [
+              _Ty=int
+          ]
+  Source.cpp
+  Generating Code...
+  context_independent_grammar_to_push_down_automaton.vcxproj -> C:\custom_folders\learning\faculty\year_ii\semester_i\flc\homeworks\category_2\context_independent_grammar_to_push_down_automaton\x64\Debug\context_independent_grammar_to_push_down_automaton.exe
