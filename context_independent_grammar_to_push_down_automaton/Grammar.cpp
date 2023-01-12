@@ -530,6 +530,12 @@ void Grammar::MakeItChomsky()
 	mf_ChomskyPartTwo();
 	mf_ChomskyPartThree();
 }
+void Grammar::MakeItGreibach()
+{
+	mf_GreibachPartOne();
+	mf_GreibachPartTwo();
+	mf_GreibachPartThree();
+}
 
 void Grammar::mf_RemoveUnusableNonterminals()
 {
@@ -723,6 +729,122 @@ void Grammar::mf_ChomskyPartThree()
 	m_productions = newProductions;
 }
 
+void Grammar::mf_GreibachPartOne()
+{
+	std::vector<Production> beforeModificationProductions = m_productions;
+	while (true) {
+		std::vector<size_t> recursiveProductions;
+		std::vector<size_t> nonrecursiveProductions;
+		char* currentScopedSymbol = nullptr;
+		bool applyFirstLema = true;
+		for (int i = 0; i < m_productions.size(); ++i) {
+			auto vt = mf_ConvertVectorOfCharsToUset(m_terminalSymbols);
+			if (m_productions[i].first[0] == m_startSymbol || (m_productions[i].first[0] >= 33 && m_productions[i].first[0] <= 64)) {
+				continue;
+			}
+			if (vt.count(m_productions[i].second[0])) {
+				continue;
+			}
+			if (currentScopedSymbol == nullptr) {
+				currentScopedSymbol = new char(m_productions[i].first[0]);
+				--i;
+				continue;
+			}
+			if (m_productions[i].first[0] == *currentScopedSymbol) {
+				if (applyFirstLema) {
+					if (m_productions[i].first[0] == m_productions[i].second[0]) {
+						applyFirstLema = false;
+						--i;
+						continue;
+					}
+					if (!vt.count(m_productions[i].second[0])) {
+						mf_GreibachFirstLema(i, 0);
+						--i;
+					}
+				}
+				if (m_productions[i].first[0] == m_productions[i].second[0]) {
+					recursiveProductions.push_back(i);
+				}
+			}
+		}
+		if (!applyFirstLema) {
+			for (int i = 0; i < m_productions.size(); ++i) {
+				if (m_productions[i].first[0] == *currentScopedSymbol && m_productions[i].second.size() == 1) {
+					nonrecursiveProductions.push_back(i);
+				}
+			}
+			mf_GreibachSecondLema(recursiveProductions, nonrecursiveProductions);
+		}
+		delete currentScopedSymbol;
+		if (beforeModificationProductions == m_productions) {
+			break;
+		}
+		beforeModificationProductions = m_productions;
+	}
+}
+void Grammar::mf_GreibachPartTwo()
+{
+	auto vn = mf_ConvertVectorOfCharsToUset(m_nonterminalSymbols);
+	for (size_t i = 0; i < m_productions.size(); ++i) {
+		if(m_productions[i].first[0]==m_startSymbol && m_productions[i].second.size()>1 && vn.count(m_productions[i].second[0])) {
+			mf_GreibachFirstLema(i, 0);
+		}
+	}
+}
+void Grammar::mf_GreibachPartThree()
+{
+	auto vn = mf_ConvertVectorOfCharsToUset(m_nonterminalSymbols);
+	for (size_t i = 0; i < m_productions.size(); ++i) {
+		if ((m_productions[i].first[0] >= 33 && m_productions[i].first[0]<=64) &&
+			vn.count(m_productions[i].second[0])) {
+			mf_GreibachFirstLema(i, 0);
+		}
+	}
+}
+
+void Grammar::mf_GreibachFirstLema(size_t productionIndex, size_t symbolFromRightPartIndex)
+{
+	char symbolToBeReplaced = m_productions[productionIndex].second[symbolFromRightPartIndex];
+	bool firstModyfication = false;
+	std::string initialRightPartForm = m_productions[productionIndex].second;
+	for (size_t i = 0; i < m_productions.size(); ++i) {
+		if (m_productions[i].first == mf_ConvertCharToSizeOneString(symbolToBeReplaced)) {
+			if (!firstModyfication) {
+				mf_ApplyProductionOnString(i, symbolFromRightPartIndex, m_productions[productionIndex].second);
+				firstModyfication = true;
+				continue;
+			}
+			std::string newRightPart = initialRightPartForm;
+			mf_ApplyProductionOnString(i, symbolFromRightPartIndex, newRightPart);
+			m_productions.emplace_back(m_productions[productionIndex].first, newRightPart);
+		}
+	}
+}
+void Grammar::mf_GreibachSecondLema(std::vector<size_t> recursiveProductionsIndexes, std::vector<size_t> nonrecursiveProductionsIndexes)
+{
+	std::vector<Production>newProductions;
+	for (size_t nonrecursiveIndex : nonrecursiveProductionsIndexes) {
+		std::string newZNonTerminal = mf_GetTheNextSymbolToBeAddedInProductions(newProductions, true);
+		m_nonterminalSymbols.push_back(newZNonTerminal[0]);
+		newProductions.emplace_back(m_productions[nonrecursiveIndex].first, m_productions[nonrecursiveIndex].second + newZNonTerminal);
+		newProductions.push_back(m_productions[nonrecursiveIndex]);
+		for (size_t recursiveIndex : recursiveProductionsIndexes) {
+			std::string rightPartWithoutFirstCharcter = m_productions[recursiveIndex].second.substr(1);
+			newProductions.emplace_back(newZNonTerminal, rightPartWithoutFirstCharcter);
+			newProductions.emplace_back(newZNonTerminal, rightPartWithoutFirstCharcter + newZNonTerminal);
+		}
+	}
+	std::unordered_set<size_t>recursiveUset(std::begin(recursiveProductionsIndexes), std::end(recursiveProductionsIndexes));
+	std::unordered_set<size_t>nonrecursiveUset(std::begin(nonrecursiveProductionsIndexes), std::end(nonrecursiveProductionsIndexes));
+	for (size_t i = 0; i < m_productions.size(); ++i) {
+		if (recursiveUset.count(i) || nonrecursiveUset.count(i)) {
+			continue;
+		}
+		newProductions.push_back(m_productions[i]);
+	}
+	m_productions = newProductions;
+}
+
 bool Grammar::mf_ContainsOnlyTerminalsOrTerminalsAndNonterminalsFromUset(const std::string& string, const std::unordered_set<std::string>& uSet) const
 {
 	auto vt = mf_ConvertVectorOfCharsToUset(m_terminalSymbols);
@@ -803,22 +925,28 @@ std::unordered_set<std::string> Grammar::mf_ConvertProductionsLeftPartToUSet(con
 	return result;
 }
 
-std::string Grammar::mf_GetTheNextSymbolToBeAddedInProductions(const std::vector<Production>& productions) const
+std::string Grammar::mf_GetTheNextSymbolToBeAddedInProductions(const std::vector<Production>& productions, bool getZ) const
 {
 	auto leftPartOfProductions = mf_ConvertProductionsLeftPartToUSet(productions);
 	for (const auto& production : m_productions) {
 		leftPartOfProductions.insert(production.first);
 	}
-	for (char character = 'A'; character <= 'Z'; ++character) {
-		if (leftPartOfProductions.count(mf_ConvertCharToSizeOneString(character))) {
-			continue;
+
+	if (getZ) {
+		for (char character = 33; character <= 64; ++character) {
+			if (leftPartOfProductions.count(mf_ConvertCharToSizeOneString(character))) {
+				continue;
+			}
+			return mf_ConvertCharToSizeOneString(character);
 		}
-		return mf_ConvertCharToSizeOneString(character);
 	}
-	for (char character = 123; character <= 255; ++character) {
-		if (leftPartOfProductions.count(mf_ConvertCharToSizeOneString(character))) {
-			continue;
+	else {
+		for (char character = 'A'; character <= 'Z'; ++character) {
+			if (leftPartOfProductions.count(mf_ConvertCharToSizeOneString(character))) {
+				continue;
+			}
+			return mf_ConvertCharToSizeOneString(character);
 		}
-		return mf_ConvertCharToSizeOneString(character);
 	}
+	return {};
 }

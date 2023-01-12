@@ -1,13 +1,15 @@
+5
+S A B C D
 3
-S A B 
-2
-a b 
+a b c
 S
-7
+9
 S AB
 S a
-S Aa
-A Aa
+S AD
+A AD
 A a
-B SBa
-B b
+B SC
+C CD
+C c
+D b

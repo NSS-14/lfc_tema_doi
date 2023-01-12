@@ -57,6 +57,7 @@ public:
 public:
 	void SimplifyGrammar();
 	void MakeItChomsky();
+	void MakeItGreibach();
 
 private:
 	bool mf_VerifyIntersection() const;
@@ -80,7 +81,7 @@ private:
 	int mf_GetRandom(const size_t& leftBound, const size_t& rightBound) const;
 	std::string mf_ReturnNonTerminalThatGoesOnlyInTerminal(const std::vector<Production>& productions, char character) const;
 	std::unordered_set<std::string> mf_ConvertProductionsLeftPartToUSet(const std::vector<Production>& productions) const;
-	std::string mf_GetTheNextSymbolToBeAddedInProductions(const std::vector<Production>& productions) const;
+	std::string mf_GetTheNextSymbolToBeAddedInProductions(const std::vector<Production>& productions, bool getZ = false) const;
 
 private:
 	void mf_RemoveUnusableNonterminals();
@@ -90,6 +91,15 @@ private:
 private:
 	void mf_ChomskyPartTwo();
 	void mf_ChomskyPartThree();
+
+private:
+	void mf_GreibachPartOne();
+	void mf_GreibachPartTwo();
+	void mf_GreibachPartThree();
+
+private:
+	void mf_GreibachFirstLema(size_t productionIndex, size_t symbolFromRightPartIndex);
+	void mf_GreibachSecondLema(std::vector<size_t> recursiveProductionsIndexes, std::vector<size_t> nonrecursiveProductionsIndexes);
 
 private:
 	std::vector<char> m_nonterminalSymbols;
